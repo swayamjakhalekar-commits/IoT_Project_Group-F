@@ -1,0 +1,11 @@
+system:
+  version: "1.0"
+  modules:
+    - camera
+    - perception
+    - control
+    - ble
+    - safety
+  settings:
+    max_speed: 10.0
+    debug: true
