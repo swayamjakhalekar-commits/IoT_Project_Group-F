@@ -1,39 +1,36 @@
 IPIE Project Structure
-IoT_Project_Group-F/
+ipie-autonomous-car/
 ├── CMakeLists.txt
 ├── README.md
+├── .gitignore
 ├── config/
-│   └── system_config.yaml
+│   └── system.yaml
 ├── include/
 │   ├── camera/
 │   │   ├── CameraInterface.h
-│   │   ├── DummyCamera.h
-│   │   └── PiCamera.h          # placeholder (future)
-│   ├── control/
-│   │   ├── Controller.h
-│   │   └── PID.h
+│   │   └── OpenCVCamera.h
 │   ├── perception/
-│   │   └── PerceptionTypes.h
+│   │   ├── PerceptionTypes.h
+│   │   └── TrackDetector.h
+│   ├── control/
+│   │   └── Controller.h
 │   ├── ble/
-│   │   ├── BLEInterface.h
-│   │   └── DummyBLE.h
+│   │   └── BLEInterface.h
 │   ├── safety/
 │   │   └── SafetySupervisor.h
-│   └── common/
-│       └── TimeUtils.h
+│   └── system/
+│       └── SharedState.h
 ├── src/
 │   ├── main.cpp
 │   ├── camera/
-│   │   ├── DummyCamera.cpp
-│   │   └── PiCamera.cpp        # placeholder
+│   │   └── OpenCVCamera.cpp
+│   ├── perception/
+│   │   └── TrackDetector.cpp
 │   ├── control/
-│   │   ├── Controller.cpp
-│   │   └── PID.cpp
+│   │   └── Controller.cpp
 │   ├── ble/
 │   │   └── DummyBLE.cpp
-│   ├── safety/
-│   │   └── SafetySupervisor.cpp
-│   └── common/
-│       └── TimeUtils.cpp
+│   └── safety/
+│       └── SafetySupervisor.cpp
 └── scripts/
     └── build.sh
