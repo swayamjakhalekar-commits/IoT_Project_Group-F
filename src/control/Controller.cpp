@@ -1,6 +1,15 @@
 #include "control/Controller.h"
-#include <iostream>
+#include <algorithm>
 
-void Controller::control(double speed, double steering) {
-    std::cout << "Controlling: speed=" << speed << ", steering=" << steering << std::endl;
+ControlCommand Controller::compute(double e_y,
+                                   double e_theta,
+                                   double fps) {
+
+    ControlCommand cmd;
+    cmd.steering = -0.6 * e_y - 0.4 * e_theta;
+
+    double max_speed = fps * 0.02;   // 2cm per frame rule
+    cmd.speed = std::clamp(max_speed, 0.0, 0.6);
+
+    return cmd;
 }

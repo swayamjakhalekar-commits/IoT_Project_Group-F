@@ -1,21 +1,11 @@
-#ifndef SHARED_STATE_H
-#define SHARED_STATE_H
-
+#pragma once
 #include <mutex>
 
-class SharedState {
-public:
-    void setSpeed(double s) {
-        std::lock_guard<std::mutex> lock(mtx);
-        speed = s;
-    }
-    double getSpeed() {
-        std::lock_guard<std::mutex> lock(mtx);
-        return speed;
-    }
-private:
-    double speed = 0.0;
+struct SharedState {
+    double lateral_error = 0.0;
+    double heading_error = 0.0;
+    double fps = 0.0;
+    bool perception_valid = false;
+
     std::mutex mtx;
 };
-
-#endif

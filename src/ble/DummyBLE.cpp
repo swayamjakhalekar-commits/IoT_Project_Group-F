@@ -1,10 +1,7 @@
-#include "ble/BLEInterface.h"
 #include <iostream>
+#include "control/Controller.h"
 
-void BLEInterface::sendData(const std::string& data) {
-    std::cout << "BLE sending: " << data << std::endl;
-}
-
-std::string BLEInterface::receiveData() {
-    return "received BLE data";
+void sendBLE(const ControlCommand& cmd) {
+    std::cout << "[BLE] steer=" << cmd.steering
+              << " speed=" << cmd.speed << std::endl;
 }

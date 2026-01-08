@@ -1,10 +1,16 @@
 #include "camera/OpenCVCamera.h"
 #include <iostream>
 
-void OpenCVCamera::capture() {
-    std::cout << "Capturing image with OpenCV" << std::endl;
+OpenCVCamera::OpenCVCamera() {
+    cap_.open(0);
+    cap_.set(cv::CAP_PROP_FRAME_WIDTH, 640);
+    cap_.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
+
+    if (!cap_.isOpened())
+        std::cerr << "Camera open failed\n";
 }
 
-bool OpenCVCamera::isReady() {
-    return true;
+bool OpenCVCamera::capture(cv::Mat& frame) {
+    cap_ >> frame;
+    return !frame.empty();
 }

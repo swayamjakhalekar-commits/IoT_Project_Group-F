@@ -1,12 +1,10 @@
-#ifndef OPENCV_CAMERA_H
-#define OPENCV_CAMERA_H
-
-#include "CameraInterface.h"
+#pragma once
+#include "camera/CameraInterface.h"
 
 class OpenCVCamera : public CameraInterface {
 public:
-    void capture() override;
-    bool isReady() override;
+    OpenCVCamera();
+    bool capture(cv::Mat& frame) override;
+private:
+    cv::VideoCapture cap_;
 };
-
-#endif

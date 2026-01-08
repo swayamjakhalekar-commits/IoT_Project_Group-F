@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-project(ipie-autonomous-car)
-
+project(ipie_autonomous_car)
 set(CMAKE_CXX_STANDARD 17)
 
-include_directories(include)
+find_package(OpenCV REQUIRED)
+include_directories(include ${OpenCV_INCLUDE_DIRS})
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
-
-add_executable(${PROJECT_NAME} ${SOURCES})
-
-# Optional: Add OpenCV if needed
-# find_package(OpenCV REQUIRED)
-# target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+file(GLOB_RECURSE SOURCES src/*.cpp)
+add_executable(ipie_car ${SOURCES})
+target_link_libraries(ipie_car ${OpenCV_LIBS})

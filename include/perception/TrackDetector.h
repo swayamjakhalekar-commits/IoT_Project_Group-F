@@ -1,12 +1,9 @@
-#ifndef TRACK_DETECTOR_H
-#define TRACK_DETECTOR_H
-
-#include "PerceptionTypes.h"
+#pragma once
+#include <opencv2/opencv.hpp>
 
 class TrackDetector {
 public:
-    virtual ~TrackDetector() = default;
-    virtual Track detectTrack();
+    bool process(const cv::Mat& frame,
+                 double& lateral_error,
+                 double& heading_error);
 };
-
-#endif

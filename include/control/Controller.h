@@ -1,10 +1,13 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#pragma once
+
+struct ControlCommand {
+    double steering;
+    double speed;
+};
 
 class Controller {
 public:
-    virtual ~Controller() = default;
-    virtual void control(double speed, double steering);
+    ControlCommand compute(double lateral_error,
+                           double heading_error,
+                           double fps);
 };
-
-#endif

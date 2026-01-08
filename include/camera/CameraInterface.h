@@ -1,11 +1,8 @@
-#ifndef CAMERA_INTERFACE_H
-#define CAMERA_INTERFACE_H
+#pragma once
+#include <opencv2/opencv.hpp>
 
 class CameraInterface {
 public:
     virtual ~CameraInterface() = default;
-    virtual void capture() = 0;
-    virtual bool isReady() = 0;
+    virtual bool capture(cv::Mat& frame) = 0;
 };
-
-#endif
