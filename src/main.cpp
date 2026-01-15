@@ -64,3 +64,90 @@ void visionThread() {
                  2);
 
         if (ok) {
+            int cx = static_cast<int>(w / 2 - lat);
+            cv::circle(frame, {cx, h - 40}, 6, {0, 0, 255}, -1);
+        }
+
+        cv::imshow("Camera Debug", frame);
+        cv::waitKey(1);
+    }
+}
+
+/* =========================
+   Control + Safety Thread
+   ========================= */
+void controlThread() {
+    Controller controller;
+    SafetySupervisor safety;
+
+    while (running) {
+        ControlCommand cmd{0.0, 0.0};
+
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            if (!shared.perception_valid)
+                continue;
+
+            cmd = controller.compute(
+                shared.lateral_error,
+                shared.heading_error,
+                shared.fps
+            );
+        }
+
+        // Apply SAFETY (latency + curvature)
+        safety.enforceSafety(cmd, shared);
+
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            shared.cmd = cmd;
+            shared.t_control_ns = TimeUtils::nowNs();
+        }
+
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(20)
+        ); // control rate ~50Hz
+    }
+}
+
+/* =========================
+   BLE Thread
+   ========================= */
+void bleThread() {
+    while (running) {
+        ControlCommand cmd;
+
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            cmd = shared.cmd;
+        }
+
+        sendBLE(cmd);
+
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            shared.t_ble_ns = TimeUtils::nowNs();
+        }
+
+        std::this_thread::sleep_for(
+            std::chrono::milliseconds(20)
+        );
+    }
+}
+
+int main() {
+    std::thread t1(visionThread);
+    std::thread t2(controlThread);
+    std::thread t3(bleThread);
+
+    std::cout << "System running. Press ENTER to stop.\n";
+    std::cin.get();
+
+    running = false;
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    return 0;
+}
