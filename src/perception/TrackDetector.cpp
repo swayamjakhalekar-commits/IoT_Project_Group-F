@@ -1,3 +1,6 @@
+#include "perception/TrackDetector.h"
+#include <opencv2/opencv.hpp>
+
 bool TrackDetector::process(const cv::Mat& frame,
                             double& lateral_error,
                             double& heading_error) {
