@@ -1,5 +1,7 @@
 #pragma once
 
+#include "system/SharedState.h"
+
 struct ControlCommand {
     double steering;
     double speed;
@@ -7,7 +9,11 @@ struct ControlCommand {
 
 class Controller {
 public:
-    ControlCommand compute(double lateral_error,
-                           double heading_error,
-                           double fps);
+    /**
+     * @brief Compute control command from perception state
+     *
+     * @param shared_state Shared system state (errors + timestamps)
+     * @return ControlCommand steering + speed
+     */
+    ControlCommand compute(SharedState& shared_state);
 };
