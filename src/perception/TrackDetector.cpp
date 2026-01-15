@@ -1,12 +1,15 @@
 #include "perception/TrackDetector.h"
+#include "system/SharedState.h"
+#include "system/TimeUtils.h"
+
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <numeric>
 #include <cmath>
+#include <mutex>
 
 bool TrackDetector::process(const cv::Mat& frame,
-                            double& lateral_error,
-                            double& heading_error)
+                            SharedState& shared_state)
 {
     if (frame.empty())
         return false;
@@ -28,7 +31,6 @@ bool TrackDetector::process(const cv::Mat& frame,
     cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
     cv::GaussianBlur(gray, blur, cv::Size(5,5), 0);
 
-    // Adaptive threshold handles lighting + red/white blocks
     cv::adaptiveThreshold(
         blur, binary,
         255,
@@ -38,7 +40,6 @@ bool TrackDetector::process(const cv::Mat& frame,
         5
     );
 
-    // Close gaps inside the road
     cv::morphologyEx(
         binary, binary,
         cv::MORPH_CLOSE,
@@ -55,7 +56,6 @@ bool TrackDetector::process(const cv::Mat& frame,
     if (contours.empty())
         return false;
 
-    // Find largest contour = road
     size_t largest_idx = 0;
     double max_area = 0.0;
 
@@ -67,14 +67,13 @@ bool TrackDetector::process(const cv::Mat& frame,
         }
     }
 
-    // Mask only the road
     cv::Mat road_mask = cv::Mat::zeros(binary.size(), CV_8UC1);
     cv::drawContours(road_mask, contours,
                      static_cast<int>(largest_idx),
                      cv::Scalar(255), cv::FILLED);
 
     /* =========================
-       4. Scanline-based width detection
+       4. Scanline-based center detection
        ========================= */
     std::vector<int> centers;
 
@@ -99,8 +98,7 @@ bool TrackDetector::process(const cv::Mat& frame,
         }
 
         if (left >= 0 && right > left) {
-            int center = (left + right) / 2;
-            centers.push_back(center);
+            centers.push_back((left + right) / 2);
         }
     }
 
@@ -114,31 +112,31 @@ bool TrackDetector::process(const cv::Mat& frame,
     int near_center  = centers.back();
     int far_center   = centers.front();
 
-    lateral_error = static_cast<double>(image_center - near_center);
+    double lateral_error =
+        static_cast<double>(image_center - near_center);
 
-    heading_error = std::atan2(
+    double heading_error = std::atan2(
         static_cast<double>(near_center - far_center),
         static_cast<double>(scan_end - scan_start)
     );
 
     /* =========================
-       6. Debug visualization
+       6. Update SharedState + timestamp
+       ========================= */
+    {
+        std::lock_guard<std::mutex> lock(shared_state.mtx);
+        shared_state.lateral_error = lateral_error;
+        shared_state.heading_error = heading_error;
+        shared_state.t_perception_ns = now_ns();
+        shared_state.perception_valid = true;
+    }
+
+    /* =========================
+       7. Debug visualization
        ========================= */
     cv::Mat debug;
     cv::cvtColor(road_mask, debug, cv::COLOR_GRAY2BGR);
 
     for (int y = scan_start; y < scan_end; y += 5) {
         int idx = (y - scan_start) / 5;
-        if (idx < static_cast<int>(centers.size()))
-            cv::circle(debug, {centers[idx], y}, 2, {0,255,0}, -1);
-    }
-
-    cv::line(debug,
-             {far_center, scan_start},
-             {near_center, scan_end},
-             {0,255,255}, 2);
-
-    cv::imshow("Binary Debug", debug);
-
-    return true;
-}
+        if (idx < static_cast<int>(centers.size())_
