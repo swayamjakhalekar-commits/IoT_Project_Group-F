@@ -1,16 +1,23 @@
 #pragma once
+
 #include <mutex>
+#include <cstdint>
 
 struct SharedState {
-    std::mutex mtx;
-
-    // perception
+    /* ===== Existing control data ===== */
     double lateral_error = 0.0;
     double heading_error = 0.0;
-    bool perception_valid = false;
     double fps = 0.0;
+    bool perception_valid = false;
 
-    // control outputs
-    double steering_cmd = 0.0;
-    double speed_cmd = 0.0;
+    /* ===== Real-time timestamps (nanoseconds) ===== */
+    uint64_t t_capture_ns = 0;
+    uint64_t t_perception_ns = 0;
+    uint64_t t_control_ns = 0;
+    uint64_t t_ble_ns = 0;
+
+    /* ===== Frame tracking ===== */
+    uint64_t frame_id = 0;
+
+    std::mutex mtx;
 };
