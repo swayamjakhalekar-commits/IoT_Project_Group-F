@@ -21,16 +21,45 @@ void visionThread() {
         double dt = std::chrono::duration<double>(now - last).count();
         last = now;
 
-        double lat, head;
+        double lat = 0.0, head = 0.0;
         bool ok = detector.process(frame, lat, head);
 
-        std::lock_guard<std::mutex> lock(shared.mtx);
-        shared.lateral_error = lat;
-        shared.heading_error = head;
-        shared.fps = 1.0 / dt;
-        shared.perception_valid = ok;
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
+            shared.perception_valid = ok;
 
-        cv::imshow("Camera", frame);
+            if (ok) {
+                shared.lateral_error = lat;
+                shared.heading_error = head;
+            }
+        }
+
+        // ---------- DEBUG OVERLAY ----------
+        int h = frame.rows;
+        int w = frame.cols;
+
+        // ROI (bottom half)
+        cv::Rect roi(0, h / 2, w, h / 2);
+        cv::rectangle(frame, roi, cv::Scalar(0, 255, 0), 2);
+
+        // Image center
+        cv::line(frame,
+                 cv::Point(w / 2, h / 2),
+                 cv::Point(w / 2, h),
+                 cv::Scalar(255, 0, 0),
+                 2);
+
+        if (ok) {
+            int cx = static_cast<int>(w / 2 + lat * (w / 2));
+            cv::circle(frame,
+                       cv::Point(cx, h - 40),
+                       6,
+                       cv::Scalar(0, 0, 255),
+                       -1);
+        }
+
+        cv::imshow("Camera Debug", frame);
         cv::waitKey(1);
     }
 }
