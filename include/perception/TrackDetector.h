@@ -1,9 +1,10 @@
 #pragma once
+
 #include <opencv2/opencv.hpp>
+#include "system/SharedState.h"
 
 class TrackDetector {
 public:
-    bool process(const cv::Mat& frame,
-                 double& lateral_error,
-                 double& heading_error);
+    // Process frame and update shared perception state
+    bool process(const cv::Mat& frame, SharedState& shared_state);
 };
