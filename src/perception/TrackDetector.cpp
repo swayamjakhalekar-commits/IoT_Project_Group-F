@@ -9,7 +9,7 @@ bool TrackDetector::process(const cv::Mat& frame,
     int w = frame.cols;
 
     // ROI: bottom half
-    int roi_y = static_cast<int>(h * 0.35);
+    int roi_y = static_cast<int>(h * 0.15);
     int roi_h = h - roi_y;
     
     cv::Mat roi = frame(cv::Rect(0, roi_y, w, roi_h)).clone();
