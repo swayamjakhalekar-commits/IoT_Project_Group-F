@@ -42,7 +42,6 @@ void visionThread() {
 
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
-            shared.frame = frame;
             shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
             shared.perception_valid = ok;
             shared.t_capture_ns = TimeUtils::nowNs();
@@ -76,23 +75,23 @@ void visionThread() {
 /* =========================
    Control + Safety Thread
    ========================= */
-void controlThread() {
+void controlThread()
+{
     Controller controller;
     SafetySupervisor safety;
 
-    while (running) {
+    while (running)
+    {
         ControlCommand cmd{0.0, 0.0};
 
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
             if (!shared.perception_valid)
                 continue;
-
-            cmd = controller.compute(shared);
-
         }
 
-        // Apply SAFETY (latency + curvature)
+        cmd = controller.compute(shared);
+
         safety.enforceSafety(cmd, shared);
 
         {
@@ -101,9 +100,7 @@ void controlThread() {
             shared.t_control_ns = TimeUtils::nowNs();
         }
 
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(20)
-        ); // control rate ~50Hz
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 }
 
