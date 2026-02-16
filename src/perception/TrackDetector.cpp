@@ -25,37 +25,40 @@ bool TrackDetector::process(const cv::Mat& frame,
     cv::Mat roi = frame(cv::Rect(0, roi_y, w, roi_h)).clone();
 
     /* =========================
-       2. Preprocessing
+       2. Preprocessing for edge detection
        ========================= */
-    cv::Mat gray, blur, binary;
+    cv::Mat gray, blur, edges;
     cv::cvtColor(roi, gray, cv::COLOR_BGR2GRAY);
-    cv::GaussianBlur(gray, blur, cv::Size(5,5), 0);
+    cv::GaussianBlur(gray, blur, cv::Size(5, 5), 0);
 
-    cv::adaptiveThreshold(
-        blur, binary,
-        255,
-        cv::ADAPTIVE_THRESH_GAUSSIAN_C,
-        cv::THRESH_BINARY_INV,
-        31,
-        5
-    );
+    /* =========================
+       3. Canny Edge Detection for path detection
+       ========================= */
+    cv::Canny(blur, edges, 100, 200);
 
+    /* =========================
+       4. Morphological operations to clean edges
+       ========================= */
     cv::morphologyEx(
-        binary, binary,
+        edges, edges,
         cv::MORPH_CLOSE,
-        cv::getStructuringElement(cv::MORPH_RECT, {9,9})
+        cv::getStructuringElement(cv::MORPH_RECT, {9, 9})
     );
 
     /* =========================
-       3. Keep ONLY the road blob
+       5. Find contours from edges
        ========================= */
     std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(binary, contours, cv::RETR_EXTERNAL,
+    cv::Mat edges_copy = edges.clone();
+    cv::findContours(edges_copy, contours, cv::RETR_EXTERNAL,
                      cv::CHAIN_APPROX_SIMPLE);
 
     if (contours.empty())
         return false;
 
+    /* =========================
+       6. Find largest contour (main track)
+       ========================= */
     size_t largest_idx = 0;
     double max_area = 0.0;
 
@@ -67,76 +70,54 @@ bool TrackDetector::process(const cv::Mat& frame,
         }
     }
 
-    cv::Mat road_mask = cv::Mat::zeros(binary.size(), CV_8UC1);
-    cv::drawContours(road_mask, contours,
-                     static_cast<int>(largest_idx),
-                     cv::Scalar(255), cv::FILLED);
-
     /* =========================
-       4. Scanline-based center detection
+       7. Get track centerline using moments
        ========================= */
-    std::vector<int> centers;
-
-    int scan_start = static_cast<int>(roi_h * 0.45);
-    int scan_end   = static_cast<int>(roi_h * 0.85);
-
-    for (int y = scan_start; y < scan_end; y += 5) {
-        int left = -1, right = -1;
-
-        for (int x = 0; x < w; x++) {
-            if (road_mask.at<uchar>(y, x) > 0) {
-                left = x;
-                break;
-            }
-        }
-
-        for (int x = w - 1; x >= 0; x--) {
-            if (road_mask.at<uchar>(y, x) > 0) {
-                right = x;
-                break;
-            }
-        }
-
-        if (left >= 0 && right > left) {
-            centers.push_back((left + right) / 2);
-        }
-    }
-
-    if (centers.size() < 5)
+    cv::Moments m = cv::moments(contours[largest_idx]);
+    
+    if (m.m00 == 0)
         return false;
 
+    int track_cx = static_cast<int>(m.m10 / m.m00);
+    int track_cy = static_cast<int>(m.m01 / m.m00);
+
     /* =========================
-       5. Compute errors
+       8. Fit line to track edges for heading
+       ========================= */
+    std::vector<cv::Point2f> track_points;
+    for (const auto& pt : contours[largest_idx]) {
+        track_points.push_back(cv::Point2f(pt.x, pt.y));
+    }
+
+    cv::Vec4f line;
+    if (track_points.size() >= 4) {
+        cv::fitLine(track_points, line, cv::DIST_L2, 0, 0.01, 0.01);
+    } else {
+        return false;
+    }
+
+    float vx = line[0];
+    float vy = line[1];
+
+    /* =========================
+       9. Compute lateral and heading errors
        ========================= */
     int image_center = w / 2;
-    int near_center  = centers.back();
-    int far_center   = centers.front();
+    double lateral_error = static_cast<double>(image_center - track_cx);
 
-    double lateral_error =
-        static_cast<double>(image_center - near_center);
-
-    double heading_error = std::atan2(
-        static_cast<double>(near_center - far_center),
-        static_cast<double>(scan_end - scan_start)
-    );
+    // Heading error: angle of track direction
+    double heading_error = std::atan2(vy, vx);
 
     /* =========================
-       6. Update SharedState + timestamp
+       10. Update SharedState + timestamp
        ========================= */
     {
         std::lock_guard<std::mutex> lock(shared_state.mtx);
         shared_state.lateral_error = lateral_error;
         shared_state.heading_error = heading_error;
-        shared_state.t_perception_ns = now_ns();
+        shared_state.t_perception_ns = TimeUtils::nowNs();
         shared_state.perception_valid = true;
     }
 
-    /* =========================
-       7. Debug visualization
-       ========================= */
-    cv::Mat debug;
-    cv::cvtColor(road_mask, debug, cv::COLOR_GRAY2BGR);
-
-    for (int y = scan_start; y < scan_end; y += 5) {
-        int idx = (y - scan_start) / 5;
-        if (idx < static_cast<int>(centers.size())_
+    return true;
+}
