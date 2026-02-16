@@ -2,6 +2,7 @@
 #include <atomic>
 #include <chrono>
 #include <iostream>
+#include <mutex>
 
 #include "camera/OpenCVCamera.h"
 #include "perception/TrackDetector.h"
@@ -14,7 +15,7 @@ SharedState shared;
 std::atomic<bool> running{true};
 
 /* =========================
-   Dummy BLE Sender (Replace Later)
+   Dummy BLE Sender
    ========================= */
 void sendBLE(const ControlCommand& cmd)
 {
@@ -39,21 +40,24 @@ void visionThread()
         if (!cam.capture(frame))
             continue;
 
-        // Calculate FPS
+        // Capture timestamp immediately
+        {
+            std::lock_guard<std::mutex> lock(shared.mtx);
+            shared.t_capture_ns = TimeUtils::nowNs();
+        }
+
+        // FPS calculation
         auto now = std::chrono::steady_clock::now();
         double dt = std::chrono::duration<double>(now - last).count();
         last = now;
 
-        // Run perception (this updates shared internally)
-        bool ok = detector.process(frame, shared);
-
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
-
             shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
-            shared.t_capture_ns = TimeUtils::nowNs();
-            shared.perception_valid = ok;
         }
+
+        // Run perception (TrackDetector handles perception_valid)
+        bool ok = detector.process(frame, shared);
 
         /* ---------- DEBUG VIS ---------- */
         int h = frame.rows;
@@ -67,12 +71,11 @@ void visionThread()
 
         if (ok)
         {
-            double lat, head;
+            double lat;
 
             {
                 std::lock_guard<std::mutex> lock(shared.mtx);
                 lat = shared.lateral_error;
-                head = shared.heading_error;
             }
 
             int cx = static_cast<int>(w / 2 - lat);
@@ -109,10 +112,8 @@ void controlThread()
             continue;
         }
 
-        // Compute control
         cmd = controller.compute(shared);
 
-        // Apply safety
         safety.enforceSafety(cmd, shared);
 
         {
