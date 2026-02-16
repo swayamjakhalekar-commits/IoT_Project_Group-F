@@ -1,23 +1,26 @@
 #ifndef BLE_INTERFACE_H
 #define BLE_INTERFACE_H
 
-#include <string>
+#include "control/Controller.h"
 #include "system/SharedState.h"
 
+/**
+ * @brief Abstract BLE communication interface
+ *
+ * Sends structured control commands and updates transmission timestamp.
+ */
 class BLEInterface {
 public:
     virtual ~BLEInterface() = default;
 
     /**
-     * @brief Send data over BLE and timestamp transmission
+     * @brief Send control command over BLE
      *
-     * @param data         Encoded control command
-     * @param shared_state Shared system state for timing
+     * @param cmd          Control command (steering + speed)
+     * @param shared_state Shared state (for timestamp update)
      */
-    virtual void sendData(const std::string& data,
-                          SharedState& shared_state) = 0;
-
-    virtual std::string receiveData() = 0;
+    virtual void sendCommand(const ControlCommand& cmd,
+                             SharedState& shared_state) = 0;
 };
 
 #endif
