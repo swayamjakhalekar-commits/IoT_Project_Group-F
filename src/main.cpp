@@ -88,11 +88,8 @@ void controlThread() {
             if (!shared.perception_valid)
                 continue;
 
-            cmd = controller.compute(
-                shared.lateral_error,
-                shared.heading_error,
-                shared.fps
-            );
+            cmd = controller.compute(shared);
+
         }
 
         // Apply SAFETY (latency + curvature)
