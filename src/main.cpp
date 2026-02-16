@@ -10,46 +10,49 @@
 #include "system/SharedState.h"
 #include "system/TimeUtils.h"
 
-// Dummy BLE sender
-void sendBLE(const ControlCommand& cmd) {
-    std::cout << "[BLE] steer=" << cmd.steering
-              << " speed=" << cmd.speed << std::endl;
-}
-
 SharedState shared;
 std::atomic<bool> running{true};
 
 /* =========================
-   Camera + Perception Thread
+   Dummy BLE Sender (Replace Later)
    ========================= */
-void visionThread() {
+void sendBLE(const ControlCommand& cmd)
+{
+    std::cout << "[BLE] steer=" << cmd.steering
+              << " speed=" << cmd.speed << std::endl;
+}
+
+/* =========================
+   Vision Thread
+   ========================= */
+void visionThread()
+{
     OpenCVCamera cam;
     TrackDetector detector;
 
     auto last = std::chrono::steady_clock::now();
 
-    while (running) {
+    while (running)
+    {
         cv::Mat frame;
+
         if (!cam.capture(frame))
             continue;
 
+        // Calculate FPS
         auto now = std::chrono::steady_clock::now();
         double dt = std::chrono::duration<double>(now - last).count();
         last = now;
 
-        double lat = 0.0, head = 0.0;
-        bool ok = detector.process(frame, lat, head);
+        // Run perception (this updates shared internally)
+        bool ok = detector.process(frame, shared);
 
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
-            shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
-            shared.perception_valid = ok;
-            shared.t_capture_ns = TimeUtils::nowNs();
 
-            if (ok) {
-                shared.lateral_error = lat;
-                shared.heading_error = head;
-            }
+            shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
+            shared.t_capture_ns = TimeUtils::nowNs();
+            shared.perception_valid = ok;
         }
 
         /* ---------- DEBUG VIS ---------- */
@@ -62,7 +65,16 @@ void visionThread() {
                  {255, 0, 0},
                  2);
 
-        if (ok) {
+        if (ok)
+        {
+            double lat, head;
+
+            {
+                std::lock_guard<std::mutex> lock(shared.mtx);
+                lat = shared.lateral_error;
+                head = shared.heading_error;
+            }
+
             int cx = static_cast<int>(w / 2 - lat);
             cv::circle(frame, {cx, h - 40}, 6, {0, 0, 255}, -1);
         }
@@ -73,7 +85,7 @@ void visionThread() {
 }
 
 /* =========================
-   Control + Safety Thread
+   Control Thread
    ========================= */
 void controlThread()
 {
@@ -84,14 +96,23 @@ void controlThread()
     {
         ControlCommand cmd{0.0, 0.0};
 
+        bool valid = false;
+
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
-            if (!shared.perception_valid)
-                continue;
+            valid = shared.perception_valid;
         }
 
+        if (!valid)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            continue;
+        }
+
+        // Compute control
         cmd = controller.compute(shared);
 
+        // Apply safety
         safety.enforceSafety(cmd, shared);
 
         {
@@ -107,8 +128,10 @@ void controlThread()
 /* =========================
    BLE Thread
    ========================= */
-void bleThread() {
-    while (running) {
+void bleThread()
+{
+    while (running)
+    {
         ControlCommand cmd;
 
         {
@@ -123,13 +146,15 @@ void bleThread() {
             shared.t_ble_ns = TimeUtils::nowNs();
         }
 
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(20)
-        );
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 }
 
-int main() {
+/* =========================
+   Main
+   ========================= */
+int main()
+{
     std::thread t1(visionThread);
     std::thread t2(controlThread);
     std::thread t3(bleThread);
