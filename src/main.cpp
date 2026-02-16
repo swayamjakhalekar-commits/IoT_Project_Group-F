@@ -3,6 +3,12 @@
 #include <chrono>
 #include <iostream>
 #include <mutex>
+#include <cstdlib>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+
+
 
 #include "camera/OpenCVCamera.h"
 #include "perception/TrackDetector.h"
@@ -15,13 +21,57 @@ SharedState shared;
 std::atomic<bool> running{true};
 
 /* =========================
-   Dummy BLE Sender
+   BLE Sender
    ========================= */
 void sendBLE(const ControlCommand& cmd)
 {
-    std::cout << "[BLE] steer=" << cmd.steering
-              << " speed=" << cmd.speed << std::endl;
+    // ==== Convert steering & speed to car values ====
+
+    int steer_value = 128;   // center default
+    int throttle_value = 0;
+
+    // Steering mapping (-1 to 1) → (40 to 200)
+    steer_value = static_cast<int>(128 - cmd.steering * 60.0);
+    steer_value = std::clamp(steer_value, 40, 200);
+
+    // Speed mapping (0 to 1) → (0 to 80)
+    throttle_value = static_cast<int>(cmd.speed * 80.0);
+    throttle_value = std::clamp(throttle_value, 0, 80);
+
+    // ==== Build frame (based on your working keyboard code) ====
+
+    std::vector<int> frame =
+    {191,10,0,8,40,0,0,0,0,0,0,0,0,0,0,0};
+
+    if (throttle_value > 0)
+    {
+        frame[7]  = 80;               // forward throttle region
+        frame[11] = steer_value;      // steering
+        frame[12] = 32;               // activate
+    }
+
+    // ==== Build busctl command ====
+
+    std::string path =
+    "/org/bluez/hci0/dev_F9_AF_3C_E2_D2_F5/service000b/char000f";
+
+    std::stringstream cmd_stream;
+
+    cmd_stream << "sudo busctl call org.bluez "
+               << path
+               << " org.bluez.GattCharacteristic1 WriteValue aya{sv} "
+               << frame.size();
+
+    for (int b : frame)
+        cmd_stream << " " << b;
+
+    cmd_stream << " 1 type s command";
+
+    std::string system_cmd = cmd_stream.str();
+
+    system(system_cmd.c_str());
 }
+
 
 /* =========================
    Vision Thread
