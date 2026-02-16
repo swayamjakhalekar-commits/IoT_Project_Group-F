@@ -6,6 +6,6 @@ class CameraInterface {
 public:
     virtual ~CameraInterface() = default;
 
-    // Capture frame only (timing handled in main thread)
+    // Capture frame only
     virtual bool capture(cv::Mat& frame) = 0;
 };
