@@ -4,7 +4,8 @@
 #include <cstdint>
 
 struct SharedState {
-    /* ===== Existing control data ===== */
+
+    /* ===== Control / Perception Data ===== */
     double lateral_error = 0.0;
     double heading_error = 0.0;
     double fps = 0.0;
@@ -15,6 +16,12 @@ struct SharedState {
     uint64_t t_perception_ns = 0;
     uint64_t t_control_ns = 0;
     uint64_t t_ble_ns = 0;
+
+    /* ===== Latest control command ===== */
+    struct ControlCommand {
+        double steering = 0.0;
+        double speed = 0.0;
+    } cmd;
 
     /* ===== Frame tracking ===== */
     uint64_t frame_id = 0;
