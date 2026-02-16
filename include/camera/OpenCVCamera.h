@@ -6,7 +6,6 @@
 class OpenCVCamera : public CameraInterface {
 public:
     OpenCVCamera();
-
     bool capture(cv::Mat& frame) override;
 
 private:
