@@ -20,6 +20,6 @@ void sendBLE(const ControlCommand& cmd, SharedState& shared_state)
     // Timestamp BLE transmission
     {
         std::lock_guard<std::mutex> lock(shared_state.mtx);
-        shared_state.t_ble_ns = now_ns();
+        shared_state.t_ble_ns = TimeUtils::nowNs();
     }
 }
