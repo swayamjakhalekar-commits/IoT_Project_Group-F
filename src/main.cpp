@@ -52,18 +52,16 @@ void sendBLE(const SharedState::ControlCommand& cmd)
     cmd_stream << "sudo busctl call org.bluez "
                << path
                << " org.bluez.GattCharacteristic1 WriteValue "
-               << "ay a{sv} "
+               << "ay "
                << frame.size();
 
     for (int b : frame)
         cmd_stream << " " << b;
 
-    // IMPORTANT: number of dictionary entries = 0
-    cmd_stream << " 0";
+    // dictionary part MUST come after bytes
+    cmd_stream << " a{sv} 0";
 
-    std::string system_cmd = cmd_stream.str();
-
-    system(system_cmd.c_str());
+    system(cmd_stream.str().c_str());
 }
 
 
