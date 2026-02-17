@@ -53,18 +53,19 @@ void sendBLE(const SharedState::ControlCommand& cmd)
 
     cmd_stream << "sudo busctl call org.bluez "
                << path
-               << " org.bluez.GattCharacteristic1 WriteValue aya{sv} "
+               << " org.bluez.GattCharacteristic1 WriteValue ay a{sv} "
                << frame.size();
 
     for (int b : frame)
         cmd_stream << " " << b;
 
-    cmd_stream << " 1 type s command";
+    cmd_stream << " 0";
 
     std::string system_cmd = cmd_stream.str();
 
     system(system_cmd.c_str());
 }
+
 
 /* =========================
    Vision Thread
