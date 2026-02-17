@@ -28,11 +28,9 @@ void sendBLE(const SharedState::ControlCommand& cmd)
     int steer_value = 128;
     int throttle_value = 0;
 
-    // Steering mapping (-1 to 1) → (40 to 200)
     steer_value = static_cast<int>(128 - cmd.steering * 60.0);
     steer_value = std::clamp(steer_value, 40, 200);
 
-    // Speed mapping (0 to 1) → (0 to 80)
     throttle_value = static_cast<int>(cmd.speed * 80.0);
     throttle_value = std::clamp(throttle_value, 0, 80);
 
@@ -53,18 +51,21 @@ void sendBLE(const SharedState::ControlCommand& cmd)
 
     cmd_stream << "sudo busctl call org.bluez "
                << path
-               << " org.bluez.GattCharacteristic1 WriteValue ay a{sv} "
+               << " org.bluez.GattCharacteristic1 WriteValue "
+               << "ay a{sv} "
                << frame.size();
 
     for (int b : frame)
         cmd_stream << " " << b;
 
+    // IMPORTANT: number of dictionary entries = 0
     cmd_stream << " 0";
 
     std::string system_cmd = cmd_stream.str();
 
     system(system_cmd.c_str());
 }
+
 
 
 /* =========================
