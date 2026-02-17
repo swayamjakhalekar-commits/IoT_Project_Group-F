@@ -8,7 +8,7 @@
 #include <vector>
 #include <algorithm>
 
-
+#include <opencv2/opencv.hpp>
 
 #include "camera/OpenCVCamera.h"
 #include "perception/TrackDetector.h"
@@ -23,11 +23,9 @@ std::atomic<bool> running{true};
 /* =========================
    BLE Sender
    ========================= */
-void sendBLE(const ControlCommand& cmd)
+void sendBLE(const SharedState::ControlCommand& cmd)
 {
-    // ==== Convert steering & speed to car values ====
-
-    int steer_value = 128;   // center default
+    int steer_value = 128;
     int throttle_value = 0;
 
     // Steering mapping (-1 to 1) → (40 to 200)
@@ -38,19 +36,15 @@ void sendBLE(const ControlCommand& cmd)
     throttle_value = static_cast<int>(cmd.speed * 80.0);
     throttle_value = std::clamp(throttle_value, 0, 80);
 
-    // ==== Build frame (based on your working keyboard code) ====
-
     std::vector<int> frame =
     {191,10,0,8,40,0,0,0,0,0,0,0,0,0,0,0};
 
     if (throttle_value > 0)
     {
-        frame[7]  = 80;               // forward throttle region
-        frame[11] = steer_value;      // steering
-        frame[12] = 32;               // activate
+        frame[7]  = 80;
+        frame[11] = steer_value;
+        frame[12] = 32;
     }
-
-    // ==== Build busctl command ====
 
     std::string path =
     "/org/bluez/hci0/dev_F9_AF_3C_E2_D2_F5/service000b/char000f";
@@ -72,7 +66,6 @@ void sendBLE(const ControlCommand& cmd)
     system(system_cmd.c_str());
 }
 
-
 /* =========================
    Vision Thread
    ========================= */
@@ -90,13 +83,11 @@ void visionThread()
         if (!cam.capture(frame))
             continue;
 
-        // Capture timestamp immediately
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
             shared.t_capture_ns = TimeUtils::nowNs();
         }
 
-        // FPS calculation
         auto now = std::chrono::steady_clock::now();
         double dt = std::chrono::duration<double>(now - last).count();
         last = now;
@@ -106,10 +97,8 @@ void visionThread()
             shared.fps = (dt > 0.0) ? (1.0 / dt) : 0.0;
         }
 
-        // Run perception (TrackDetector handles perception_valid)
         bool ok = detector.process(frame, shared);
 
-        /* ---------- DEBUG VIS ---------- */
         int h = frame.rows;
         int w = frame.cols;
 
@@ -147,7 +136,7 @@ void controlThread()
 
     while (running)
     {
-        ControlCommand cmd{0.0, 0.0};
+        SharedState::ControlCommand cmd{0.0, 0.0};
 
         bool valid = false;
 
@@ -183,7 +172,7 @@ void bleThread()
 {
     while (running)
     {
-        ControlCommand cmd;
+        SharedState::ControlCommand cmd;
 
         {
             std::lock_guard<std::mutex> lock(shared.mtx);
