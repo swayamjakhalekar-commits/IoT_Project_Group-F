@@ -3,9 +3,10 @@
 #include <algorithm>
 #include <mutex>
 
-ControlCommand Controller::compute(SharedState& shared_state)
+SharedState::ControlCommand
+Controller::compute(SharedState& shared_state)
 {
-    ControlCommand cmd{0.0, 0.0};
+    SharedState::ControlCommand cmd{0.0, 0.0};
 
     double e_y = 0.0;
     double e_theta = 0.0;
