@@ -1,13 +1,15 @@
 #pragma once
 
-#include "camera/CameraInterface.h"
 #include <opencv2/opencv.hpp>
 
-class OpenCVCamera : public CameraInterface {
+class OpenCVCamera
+{
 public:
     OpenCVCamera();
-    bool capture(cv::Mat& frame) override;
+    ~OpenCVCamera();
+
+    bool capture(cv::Mat& frame);
 
 private:
-    cv::VideoCapture cap_;
+    cv::VideoCapture cap;
 };
