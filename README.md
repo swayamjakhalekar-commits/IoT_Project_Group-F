@@ -84,18 +84,6 @@ IoT_Project_Group-F/
 └── README.md
 ```
 
-IoT_Project_Group-F/
-│
-├── main.cpp
-├── CMakeLists.txt
-├── *.hpp
-├── CHANGES.md
-└── build/
-
-```
-
----
-
 ## 🧪 Future Improvements
 
 - Add simulation environment (Gazebo / CARLA)
