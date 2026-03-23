@@ -1,7 +1,0 @@
-build/
-*.o
-*.exe
-*.out
-.vscode/
-.idea/
-*.log
