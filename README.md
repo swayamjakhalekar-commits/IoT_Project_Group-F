@@ -27,6 +27,18 @@ The project is structured into the following modules:
 
 ---
 
+## 📸 Project Visualization
+
+| Block Diagram                  | Car Detection                  |
+| ------------------------------ | ------------------------------ |
+| ![](images/block_diagram.jpeg) | ![](images/car_detection.jpeg) |
+
+| Centerline Detection        | Zones                  |
+| --------------------------- | ---------------------- |
+| ![](images/centerline.jpeg) | ![](images/zones.jpeg) |
+
+---
+
 ## ⚙️ Requirements
 
 * C++17 or later
@@ -79,17 +91,25 @@ IoT_Project_Group-F/
 │   ├── safety_monitor.hpp
 │   └── tracking_module.hpp
 │
+├── images/
+│   ├── block_diagram.jpeg
+│   ├── car_detection.jpeg
+│   ├── centerline.jpeg
+│   └── zones.jpeg
+│
 ├── CMakeLists.txt
 ├── CHANGES.md
 └── README.md
 ```
 
+---
+
 ## 🧪 Future Improvements
 
-- Add simulation environment (Gazebo / CARLA)
-- Integrate advanced path planning (MPC)
-- Improve perception using deep learning
-- Add telemetry dashboard
+* Add simulation environment (Gazebo / CARLA)
+* Integrate advanced path planning (MPC)
+* Improve perception using deep learning
+* Add telemetry dashboard
 
 ---
 
@@ -104,5 +124,3 @@ IoT_Project_Group-F/
 This project is for academic and educational purposes.
 
 ---
-
-
