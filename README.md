@@ -69,27 +69,45 @@ make
 ```
 IoT_Project_Group-F/
 │
+├── src/
+│   └── main.cpp
+│
+├── include/
+│   ├── ble_manager.hpp
+│   ├── centerline_module.hpp
+│   ├── pure_pursuit_controller.hpp
+│   ├── safety_monitor.hpp
+│   └── tracking_module.hpp
+│
+├── CMakeLists.txt
+├── CHANGES.md
+└── README.md
+```
+
+IoT_Project_Group-F/
+│
 ├── main.cpp
 ├── CMakeLists.txt
 ├── *.hpp
 ├── CHANGES.md
 └── build/
+
 ```
 
 ---
 
 ## 🧪 Future Improvements
 
-* Add simulation environment (Gazebo / CARLA)
-* Integrate advanced path planning (MPC)
-* Improve perception using deep learning
-* Add telemetry dashboard
+- Add simulation environment (Gazebo / CARLA)
+- Integrate advanced path planning (MPC)
+- Improve perception using deep learning
+- Add telemetry dashboard
 
 ---
 
 ## 👨‍💻 Author
 
-**Swayam Jakhalekar**
+**Swayam Jakhalekar, Shantanu Shende**
 
 ---
 
@@ -99,8 +117,4 @@ This project is for academic and educational purposes.
 
 ---
 
-## ⭐ Contributing
 
-Contributions, issues, and suggestions are welcome!
-
----
