@@ -101,6 +101,11 @@ IoT_Project_Group-F/
 ├── CHANGES.md
 └── README.md
 ```
+## 🎥 System Demo
+
+Watch the autonomous racing system in action:
+
+▶️ [Click here to view demo](videos/project_demo.mp4)
 
 ---
 
